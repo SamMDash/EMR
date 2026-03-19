@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "WebApps",
+			"path": "../WebApps"
+		},
+		{
+			"name": "ai-integration",
+			"path": "../ai-integration"
+		}
+	],
+	"settings": {}
+}
