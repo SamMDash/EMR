@@ -35,8 +35,6 @@ services:
       - bahmni-net
     depends_on:
       - ai-integration-backend
-    volumes:
-      - ../webapps/ai-integration/frontend/nginx.conf:/etc/nginx/conf.d/default.conf
 
   proxy:
     image: 'bahmni/proxy:${PROXY_IMAGE_TAG:?}'
