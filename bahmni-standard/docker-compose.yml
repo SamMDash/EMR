@@ -30,11 +30,13 @@ services:
     image: anbessawm/ai-integration-frontend:${AI_INTEGRATION_FRONTEND_IMAGE_TAG:?}
     container_name: ai-integration-frontend
     ports:
-      - "8082:80"
+      - "8082:3000"
     networks:
       - bahmni-net
     depends_on:
       - ai-integration-backend
+    environment:
+      - AI_BACKEND_URL=http://ai-integration-backend:3001/clinical-analysis
 
   proxy:
     image: 'bahmni/proxy:${PROXY_IMAGE_TAG:?}'
