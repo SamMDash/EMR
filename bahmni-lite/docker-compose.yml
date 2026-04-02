@@ -16,28 +16,29 @@ x-log-config: &log-config
   <<: *default
 
 services:
-  # ai-integration-backend:
-  #   image: anbessawm/ai-integration-backend:${AI_INTEGRATION_BACKEND_IMAGE_TAG:?}
-  #   container_name: ai-integration-backend
-  #   environment:
-  #     - OPENMRS_BASE_URL=http://openmrs:8080/openmrs/ws/rest/v1
-  #     - AI_SERVICE_URL=http://ai-microservice:8000/clinical-analysis
-  #   ports:
-  #     - "3001:3001"
-  #   networks:
-  #     - bahmni-net
+  ai-integration-backend:
+    image: anbessawm/ai-integration-backend:${AI_INTEGRATION_BACKEND_IMAGE_TAG:?}
+    container_name: ai-integration-backend
+    environment:
+      - OPENMRS_BASE_URL=http://openmrs:8080/openmrs/ws/rest/v1
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:?}
+    ports:
+      - "3001:3001"
+    networks:
+      - bahmni-net
+      - default
 
-  # ai-integration-frontend:
-  #   image: anbessawm/ai-integration-frontend:${AI_INTEGRATION_FRONTEND_IMAGE_TAG:?}
-  #   container_name: ai-integration-frontend
-  #   ports:
-  #     - "8082:80"
-  #   networks:
-  #     - bahmni-net
-  #   depends_on:
-  #     - ai-integration-backend
-  #   volumes:
-  #     - ../webapps/ai-integration/frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+  ai-integration-frontend:
+    image: anbessawm/ai-integration-frontend:${AI_INTEGRATION_FRONTEND_IMAGE_TAG:?}
+    container_name: ai-integration-frontend
+    ports:
+      - "8082:3000"
+    networks:
+      - bahmni-net
+    depends_on:
+      - ai-integration-backend
+    environment:
+      - AI_BACKEND_URL=http://ai-integration-backend:3001/clinical-analysis
 
   proxy:
     image: 'bahmni/proxy:${PROXY_IMAGE_TAG:?}'

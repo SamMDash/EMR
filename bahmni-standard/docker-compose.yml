@@ -20,11 +20,12 @@ services:
     container_name: ai-integration-backend
     environment:
       - OPENMRS_BASE_URL=http://openmrs:8080/openmrs/ws/rest/v1
-      - AI_SERVICE_URL=http://ai-microservice:8000/clinical-analysis
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:?}
     ports:
       - "3001:3001"
     networks:
       - bahmni-net
+      - default
 
   ai-integration-frontend:
     image: anbessawm/ai-integration-frontend:${AI_INTEGRATION_FRONTEND_IMAGE_TAG:?}
@@ -381,8 +382,8 @@ services:
     profiles: ["emr","bahmni-standard","bahmni-mart"]
     volumes:
       - "${CONFIG_VOLUME:?}:/usr/local/apache2/htdocs/bahmni_config/:ro"
-    #   - "${BAHMNI_APPS_PATH:?}/ui/app/:/usr/local/apache2/htdocs/bahmni"
-    #   - "${BAHMNI_APPS_PATH:?}/ui/node_modules/@bower_components/:/usr/local/apache2/htdocs/bahmni/components"
+      - "/home/azureuser/WebApps/ui/app/:/usr/local/apache2/htdocs/bahmni"
+      - "/home/azureuser/WebApps/ui/node_modules/@bower_components/:/usr/local/apache2/htdocs/bahmni/components"
     logging: *log-config
     restart: ${RESTART_POLICY}
 
