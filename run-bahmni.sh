@@ -1,5 +1,11 @@
 #!/bin/bash
 
+COMPOSE_CMD=()
+
+function compose {
+    "${COMPOSE_CMD[@]}" "$@"
+}
+
 
 function checkDockerAndDockerComposeVersion {
     
@@ -15,18 +21,24 @@ function checkDockerAndDockerComposeVersion {
     DOCKER_SERVER_VERSION_BUILD=$(echo "$DOCKER_SERVER_VERSION"| cut -d'.' -f 3)
 
     if [ "${DOCKER_SERVER_VERSION_MAJOR}" -ge 20 ]; then
-        echo 'Docker version >= 20.10.13, using Docker Compose V2'
+        echo 'Docker version >= 20.10.13 detected'
     else
         echo 'Docker versions < 20.x are not supported' >&2 
         exit 1
     fi
 
-    # Check the version of Docker Compose
-    if ! [ -x "$(command -v docker compose version)" ]; then
-    echo 'Error: docker compose is not installed. Please install docker compose.' >&2
-    exit 1
+    # Prefer Compose V2 (`docker compose`) and fallback to v1 (`docker-compose`).
+    if docker compose version >/dev/null 2>&1; then
+        COMPOSE_CMD=(docker compose)
+    elif command -v docker-compose >/dev/null 2>&1; then
+        COMPOSE_CMD=(docker-compose)
+    else
+        echo 'Error: Docker Compose is not installed. Install Docker Compose V2 plugin (recommended) or docker-compose.' >&2
+        exit 1
     fi
-    version=$(docker compose version)
+
+    version=$(compose version)
+    echo "Docker Compose command: ${COMPOSE_CMD[*]}"
     echo "Docker Compose version: $version"
     echo "---"
 }
@@ -47,57 +59,57 @@ function checkIfDirectoryIsCorrect {
 function start {
     echo "Executing command: 'docker compose up -d' with the images specified in the $file file"
     echo "Starting Bahmni with default profile from $file file"
-    docker compose --env-file "$file" up -d
+    compose --env-file "$file" up -d
 }
 
 
 function stop {
     echo "Executing command: 'docker compose down' with all profiles"
-    docker compose --env-file "$file" --profile emr --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart down
+    compose --env-file "$file" --profile emr --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart down
 }
 
 function sshIntoService {
     # Using all profiles, so that we can status of all services
     echo "Listing the running services..."
-    docker compose --env-file "$file" --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart ps
+    compose --env-file "$file" --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart ps
 
     echo "Enter the SERVICE name which you wish to ssh into:"
     read serviceName
     
-    docker compose --env-file "$file" exec $serviceName /bin/sh
+    compose --env-file "$file" exec $serviceName /bin/sh
 }
 
 function showLogsOfService {
     # Using all profiles, so that we can status of all services
     echo "Listing the running services..."
-    docker compose --env-file "$file" --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart ps
+    compose --env-file "$file" --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart ps
 
     echo "Enter the SERVICE name whose logs you wish to see:"
     read serviceName
     
-    docker compose --env-file "$file" logs $serviceName -f
+    compose --env-file "$file" logs $serviceName -f
 }
 
 
 function showOpenMRSlogs {
     echo "Opening OpenMRS Logs..."
-    docker compose logs openmrs -f 
+    compose logs openmrs -f 
 }
 
 function startMart {
     echo "Starting services with profile 'bahmni-mart'..."
-    docker compose --env-file "$file" --profile bahmni-mart up -d
+    compose --env-file "$file" --profile bahmni-mart up -d
 }
 
 function pullLatestImages {
     echo "Pulling all the images specified in the $file file..."
-    docker compose --env-file "$file" pull
+    compose --env-file "$file" pull
 }
 
 function showStatus {
     echo "Listing status of running Services with command: 'docker compose ps'"
     # Using all profiles, so that we can status of all services
-    docker compose --env-file "$file" --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart ps
+    compose --env-file "$file" --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart ps
 
 }
 
@@ -127,12 +139,12 @@ function resetAndEraseALLVolumes {
     echo "Proceeding with a DELETE.... "
     
     echo "1. Stopping all services, using all profiles.."
-    docker compose --env-file "$file" --profile emr --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart down
+    compose --env-file "$file" --profile emr --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart down
     
-    docker compose --env-file "$file" ps
+    compose --env-file "$file" ps
     
     echo "2. Deleting all volumes (-v) .."
-    docker compose --env-file "$file" --profile emr --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart down -v
+    compose --env-file "$file" --profile emr --profile bahmni-lite --profile bahmni-standard --profile bahmni-mart down -v
     RESULT=$?
     if [ $RESULT -eq 0 ]; then
         echo "Volumes deleted successfully."
@@ -158,16 +170,16 @@ function resetAndEraseALLVolumes {
 function restartService {
     # One can ONLY restart services in current profile (limitation of docker compose restart command). 
     echo "Listing the running services from current profile ($file file) that can be restarted..."
-    docker compose --env-file "$file" ps
+    compose --env-file "$file" ps
 
     echo "Enter the name of the SERVICE to restart:"
     read serviceName
     
     echo "Restarting SERVICE: $serviceName"
-    docker compose --env-file "$file" restart $serviceName
+    compose --env-file "$file" restart $serviceName
 
     if confirm "Do you want to see the service logs?"; then
-        docker compose --env-file "$file" logs $serviceName -f
+        compose --env-file "$file" logs $serviceName -f
     fi
 }
 
